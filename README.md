@@ -7,7 +7,7 @@
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-green?logo=supabase)](https://supabase.com/)
 [![Vercel](https://img.shields.io/badge/Vercel-deployed-black?logo=vercel)](https://vercel.com/)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3-38bdf8?logo=tailwindcss)](https://tailwindcss.com/)
-[![Claude API](https://img.shields.io/badge/Claude-API-orange)](https://anthropic.com/)
+[![OpenAI API](https://img.shields.io/badge/OpenAI-API-412991?logo=openai)](https://openai.com/)
 
 > **Live:** [https://steampulse.jp](https://steampulse.jp)
 
@@ -35,10 +35,10 @@ Steam Web API の `appdetails` + `appreviews` から日本語レビュー数・`
 | フロントエンド | Next.js 15 (App Router) / TypeScript / Tailwind CSS |
 | バックエンド | Next.js Server Actions / API Routes |
 | データベース | Supabase (PostgreSQL + Auth + RLS) |
-| AI | Claude API (Anthropic SDK、prompt caching + batch 処理) |
+| AI | OpenAI API (gpt-4o-mini 等、コストを抑制した運用) |
 | インフラ | Vercel (ISR + Edge Functions) / GitHub Actions (cron fallback + backfill) |
 | 監視・SEO | Google Search Console / GA4 / Vercel Speed Insights |
-| 外部 API | Steam Web API (appdetails / appreviews / app list) / OpenAI API (一部記事生成) |
+| 外部 API | Steam Web API (appdetails / appreviews / app list) |
 
 ---
 
