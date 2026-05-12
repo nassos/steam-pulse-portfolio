@@ -79,6 +79,27 @@ Vercel Hobby の 60 秒タイムアウト制約内で `DEFAULT_LIMIT = 8` (5/13 
 
 DB 235 件でローンチ後、`DEFAULT_LIMIT = 8` + `appid 降順ソート` の組み合わせが中堅 appid 帯の話題作を構造的に取りこぼす設計と判明。`.github/workflows/backfill-from-list.yml` を新設し、GitHub Actions 経由で 162 件を一括救出、DB を 997 件まで拡充した。詳細は後述のストーリー参照。
 
+新設した救出インフラのコア (workflow_dispatch で appid 直接指定):
+
+```yaml
+# .github/workflows/backfill-from-list.yml (抜粋)
+on:
+  workflow_dispatch:
+    inputs:
+      appids:
+        description: "Comma-separated Steam appids to backfill"
+        required: true
+jobs:
+  backfill:
+    steps:
+      - name: Build appid list
+        run: echo "${{ inputs.appids }}" | tr ',' '\n' > /tmp/appids.txt
+      - name: Run backfill
+        run: npm run backfill:from-list -- --file=/tmp/appids.txt
+```
+
+これ以降、SC や運用チェックで漏れを発見したら、Actions タブから `appids: 3526710` を入力するだけで 30 秒以内に救出可能。一度きりの workaround ではなく、運用に組み込める恒久インフラとして設計した。
+
 ### 5. AI エージェント協働の運用設計
 
 Claude Code を日常開発の中心に置き、AI 単独で進めて良い範囲と人間確認を必須とする範囲を意思決定マトリクスに明文化している。詳細は後述の「AI 協働の実例」参照。
