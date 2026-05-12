@@ -148,7 +148,7 @@ Claude Code との協働は型ではなく、場面ごとに役割を分担す�
 
 | SaaS | 概要 | 状態 |
 |---|---|---|
-| Lumière Tarot | 22 カード SEO ページ + Claude API 解釈生成 + Stripe 課金 | 本番稼働中 (2026-04-29 ローンチ) |
+| Lumière Tarot | 22 カード SEO ページ + Claude API 解釈生成 | 本番稼働中 (2026-04-29 ローンチ) |
 | TechJP Feed | AI 要約付き IT ニュース集約 Android アプリ | Google Play 公開準備中 |
 | kosodate-pulse | 子育て情報キュレーション | 基盤稼働中 |
 | AI 現場 | AI 副業マッチング LP | インデックス確認中 |
