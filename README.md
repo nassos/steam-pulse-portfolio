@@ -33,10 +33,10 @@ Steam Web API の `appdetails` + `appreviews` から日本語レビュー数・`
 | 領域 | 技術 |
 |---|---|
 | フロントエンド | Next.js 15 (App Router) / TypeScript / Tailwind CSS |
-| バックエンド | Next.js Server Actions / API Routes |
-| データベース | Supabase (PostgreSQL + Auth + RLS) |
-| AI | OpenAI API (gpt-4o-mini 等、コストを抑制した運用) |
-| インフラ | Vercel (ISR + Edge Functions) / GitHub Actions (cron fallback + backfill) |
+| バックエンド | Next.js API Routes / Server Components (await 直叩き) |
+| データベース | Supabase (PostgreSQL、書き込みは Service Role Key 経由の cron / GH Actions のみ) |
+| AI | OpenAI API (gpt-5.4-mini、env で切替可能、コストを抑制した運用) |
+| インフラ | Vercel (ISR + Edge Middleware) / GitHub Actions (backfill workflow) |
 | 監視・SEO | Google Search Console / GA4 / Vercel Speed Insights |
 | 外部 API | Steam Web API (appdetails / appreviews / app list) |
 
@@ -56,7 +56,7 @@ flowchart TD
     F --> D
 
     H[GitHub Actions\nworkflow_dispatch] -->|backfill-from-list.ts\nad-hoc rescue| D
-    I[GitHub Actions\n定期 + 手動] -->|backfill-jp-search.ts\nStorefront 検索| D
+    I[GitHub Actions\n手動 workflow_dispatch] -->|backfill-jp-search.ts\nStorefront 検索| D
 ```
 
 ---
@@ -65,11 +65,11 @@ flowchart TD
 
 ### 1. cron 自動収集と ISR キャッシュ最適化
 
-Vercel Hobby の 60 秒タイムアウト制約内で `DEFAULT_LIMIT = 8` (5/13 以降 20 に引き上げ予定) で日次取得。ISR `revalidate=3600` で個別ゲームページとジャンルハブを定期再生成し、Server Components + Suspense で TTFB を短縮している。cron の確実性を保つため、GitHub Actions をフォールバックトリガーとして並走させている。
+Vercel Hobby の 60 秒タイムアウト制約内で `DEFAULT_LIMIT = 8` (5/13 以降 20 に引き上げ予定) で日次取得。ISR `revalidate=3600` で個別ゲームページとジャンルハブを定期再生成し、Server Components + Suspense で TTFB を短縮している。取りこぼし救出用に GitHub Actions 経由の手動 backfill ワークフロー (backfill-from-list / backfill-jp-search) を用意し、必要時に workflow_dispatch で稼働させる構成。
 
 ### 2. SEO 設計と効果検証 (Search Console / GA4)
 
-17 指標スコアカードを設計し、フェーズごとに全体 CTR・ジャンル別 CTR・インデックス数の推移を Search Console データで追跡。URL 設計・構造化データ (JSON-LD breadcrumb / FAQ schema) ・サイトマップ管理をセットで実装し、施策 Phase A-G の累計で全体 CTR 0.83% → 1.55% に改善、ジャンル軸の表示数は +875% になった。
+複数指標のスコアカードを設計し、フェーズごとに全体 CTR・ジャンル別 CTR・インデックス数の推移を Search Console データで追跡。URL 設計・構造化データ (JSON-LD breadcrumb / FAQ schema) ・サイトマップ管理をセットで実装し、複数フェーズの累計で全体 CTR 0.83% → 1.55% に改善、ジャンル軸の表示数は +875% になった。
 
 ### 3. `/jp-friendly/*` 独自集計軸と構造化データ
 
@@ -91,7 +91,7 @@ Claude Code を日常開発の中心に置き、AI 単独で進めて良い範�
 
 最初は Steam API レスポンスの型違いかと思って Supabase の SQL コンソールを叩いた。違った。次に cron の実行ログを確認した。走ってはいた。Q1 から Q6 まで順に SQL を発行しながら、ようやく原因が「appid の降順ソート + DEFAULT_LIMIT 打ち切り」の複合だと分かった。
 
-原因は (3) と (4) の複合だった。`/api/cron/fetch/route.ts` は appid を降順で処理していたため、直近の超新作 (appid 大) を優先して取り込む一方、`DEFAULT_LIMIT = 8` の打ち切りにより中堅 appid 帯のゲームが毎日取り込みキューから落ち続けていた。Crab のように話題になっても appid がやや古い作品は、この設計では永遠に取り込まれない死角があった。
+`/api/cron/fetch/route.ts` は appid を降順で処理していたため、直近の超新作 (appid 大) を優先して取り込む一方、`DEFAULT_LIMIT = 8` の打ち切りにより中堅 appid 帯のゲームが毎日取り込みキューから落ち続けていた。Crab のような中堅 appid 帯の話題作は、この設計では永遠に取り込まれない死角があった。
 
 対応は 2 段階にした。まず即時対処として `.github/workflows/backfill-from-list.yml` を新設し、取りこぼしリストを手動インプットで一括救出する workflow を書いた。次に既存の `backfill-jp-search.ts` を `workflow_dispatch` で流して 162 件を一括取得 (Reviews_DESC で取りこぼし候補を Steam Storefront から再収集)、DB が 835 件から 997 件に拡充されたことを Supabase で確認した。ISR キャッシュのリセットで本番への反映も確認。
 
